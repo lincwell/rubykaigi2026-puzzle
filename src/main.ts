@@ -1,10 +1,40 @@
-const app = document.querySelector<HTMLDivElement>('#app');
+import '#/style.css'
+import { initRuby, getRubyVersion, runChain } from '#/ruby/runner'
+import { mountQuizScreen } from '#/screens/QuizScreen'
+import { mountResultScreen } from '#/screens/ResultScreen'
+import type { MethodName, QuizResult } from '#/types'
 
-if (app) {
-  app.innerHTML = `
-    <main style="padding: 2rem; font-family: sans-serif;">
-      <h1>こんにちは</h1>
-      <p>Sample が動いています。</p>
-    </main>
-  `;
+const app = document.querySelector<HTMLDivElement>('#app')!
+
+// Start loading Ruby WASM in the background immediately
+const rubyInitPromise = initRuby()
+
+function showQuiz(): void {
+  mountQuizScreen(app, getRubyVersion(), async (chain: MethodName[]) => {
+    // Wait for Ruby WASM to be ready (usually already done by now)
+    await rubyInitPromise
+    const result: QuizResult = await runChain(chain)
+    showResult(result)
+  })
 }
+
+function showResult(result: QuizResult): void {
+  mountResultScreen(app, result, getRubyVersion(), () => {
+    showQuiz()
+  })
+}
+
+// Update Ruby version in header once WASM is loaded
+rubyInitPromise
+  .then((_version) => {
+    // Re-render quiz screen if it's the current screen to show the version
+    const versionEl = app.querySelector<HTMLElement>('[data-ruby-version]')
+    if (versionEl !== null) {
+      versionEl.textContent = `ruby ${getRubyVersion()}`
+    }
+  })
+  .catch((err: unknown) => {
+    console.error('Failed to initialize Ruby WASM:', err)
+  })
+
+showQuiz()

@@ -25,6 +25,7 @@
   },
   "homepage": "https://lincwell.github.io/rubykaigi2026-puzzle/",
   "dependencies": {
+    "@ruby/4.0-wasm-wasi": "^2.8.1-2.9.0",
     "@ruby/wasm-wasi": "^2.8.1"
   },
   "devDependencies": {

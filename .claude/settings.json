@@ -1,0 +1,7 @@
+// .claude/settings.json
+// https://code.claude.com/docs/ja/permission-modes
+{
+  "permissions": {
+    "defaultMode": "auto"
+  }
+}

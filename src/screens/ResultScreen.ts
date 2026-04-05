@@ -1,0 +1,265 @@
+import { getLevel, COUPON_CODE, COUPON_URL, type QuizResult, type StepResult } from '#/types'
+import { buildHeader, buildFooter } from '#/layout'
+
+const DEPLOY_URL = 'https://lincwell.github.io/rubykaigi2026-puzzle/'
+
+export function mountResultScreen(app: HTMLElement, result: QuizResult, rubyVersion: string, onRetry: () => void): void {
+  app.innerHTML = buildSkeletonHTML(result, rubyVersion)
+  app.querySelectorAll('[data-action="retry"]').forEach((el) => el.addEventListener('click', onRetry))
+  void animateSteps(app, result)
+}
+
+// ---------- Animation ----------
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function animateSteps(app: HTMLElement, result: QuizResult): Promise<void> {
+  const container = app.querySelector<HTMLElement>('[data-steps-container]')
+  if (container === null) return
+
+  for (let i = 0; i < result.steps.length; i++) {
+    if (i > 0) await delay(500)
+
+    const step = result.steps[i]!
+    const row = document.createElement('div')
+    row.className = 'step-enter border-b border-gray-100 last:border-0'
+    row.innerHTML = buildStepRow(step)
+    container.appendChild(row)
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  await delay(500)
+
+  // After all steps: show hint or score
+  if (result.errorStep !== null) {
+    showErrorHint(app, result)
+  } else {
+    showPostSteps(app, result)
+  }
+}
+
+function showErrorHint(app: HTMLElement, result: QuizResult): void {
+  const hintEl = app.querySelector<HTMLElement>('[data-error-hint]')
+  if (hintEl === null) return
+
+  const errorStep = result.steps[result.errorStep!]
+  const prevStep = result.errorStep! > 0 ? result.steps[result.errorStep! - 1] : null
+  const hint = getErrorHint(errorStep?.error ?? '', errorStep?.label ?? '', prevStep?.type ?? '')
+
+  hintEl.innerHTML = `
+    <div class="step-enter px-4 py-4 bg-amber-50 border-t border-amber-100">
+      <p class="text-xs font-bold text-amber-700 mb-2">💡 ヒント</p>
+      <p class="text-xs text-amber-800 leading-relaxed">${hint}</p>
+    </div>
+  `
+  hintEl.classList.remove('hidden')
+  hintEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
+function showPostSteps(app: HTMLElement, result: QuizResult): void {
+  const postEl = app.querySelector<HTMLElement>('[data-post-steps]')
+  if (postEl === null) return
+
+  postEl.innerHTML = buildPostStepsHTML(result)
+  postEl.classList.remove('hidden')
+  postEl.classList.add('step-enter')
+  postEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+}
+
+// ---------- Error hints ----------
+
+function getErrorHint(errorMsg: string, failedLabel: string, prevType: string): string {
+  const method = failedLabel.startsWith('.') ? failedLabel.slice(1) : failedLabel
+
+  if (errorMsg.includes('NoMethodError')) {
+    switch (method) {
+      case 'chars':
+      case 'bytes':
+        return `<code class="font-mono">.${method}</code> は <strong>String</strong> のメソッドです。
+          前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
+          <code class="font-mono">.to_s</code> や <code class="font-mono">.inspect</code> で文字列に変換してから試しましょう。`
+
+      case 'join':
+        return `<code class="font-mono">.join</code> は <strong>Array</strong> のメソッドです。
+          前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
+          <code class="font-mono">.chars</code>、<code class="font-mono">.bytes</code>、<code class="font-mono">.methods</code> などで Array にしてから使いましょう。`
+
+      case 'sum':
+        if (prevType === 'String') {
+          return `<code class="font-mono">String#sum</code> はチェックサムを返します（<code class="font-mono">Array#sum</code> の合計とは異なります）。
+            <code class="font-mono">.bytes</code> で整数配列に変換してから <code class="font-mono">.sum</code> を使うと byte の合計が取れます。`
+        }
+        return `<code class="font-mono">.sum</code> は <strong>Array</strong> または <strong>String</strong> のメソッドです。
+          前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
+          <code class="font-mono">.bytes</code> や <code class="font-mono">.methods</code> で Array にしてから使いましょう。`
+
+      case 'size':
+      case 'length':
+        return `<code class="font-mono">.${method}</code> をこの型（<strong>${escapeHtml(prevType)}</strong>）では使えません。
+          <code class="font-mono">.to_s</code> で文字列に変換してから試してみましょう。`
+
+      default:
+        return `<code class="font-mono">.${escapeHtml(method)}</code> は <strong>${escapeHtml(prevType)}</strong> には定義されていません。
+          型遷移の表を参考にメソッドの順序を変えてみましょう。`
+    }
+  }
+
+  if (errorMsg.includes('TypeError')) {
+    if (method === 'sum' && prevType === 'Array') {
+      return `Array の要素が Integer でないため <code class="font-mono">.sum</code> が失敗しました。
+        <code class="font-mono">.bytes</code> で整数の Array を作ってから <code class="font-mono">.sum</code> しましょう。`
+    }
+    return `型の変換に失敗しました（<strong>${escapeHtml(prevType)}</strong> → <code class="font-mono">.${escapeHtml(method)}</code>）。
+      メソッドの組み合わせを変えてみましょう。`
+  }
+
+  return `<code class="font-mono">.${escapeHtml(method)}</code> の呼び出し中にエラーが発生しました。
+    型遷移の表を参考にメソッドの順序を確認してみましょう。`
+}
+
+// ---------- HTML builders ----------
+
+function buildSkeletonHTML(result: QuizResult, rubyVersion: string): string {
+  const hasError = result.errorStep !== null
+  const cardBorderColor = hasError ? '#fca5a5' : '#e5e7eb'
+  const cardHeaderBg = hasError ? 'bg-red-50' : 'bg-gray-50'
+  const cardHeaderText = hasError ? 'text-red-700' : 'text-gray-700'
+  const cardHeaderIcon = hasError ? '⚠' : '✓'
+  const cardHeaderLabel = hasError ? '投与エラー' : '診断結果'
+
+  return `
+    ${buildHeader(rubyVersion)}
+    <main class="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      <!-- Steps card -->
+      <div class="bg-white rounded-xl shadow-sm overflow-hidden" style="border: 2px solid ${cardBorderColor};">
+        <div class="px-4 py-3 border-b flex items-center gap-2 ${cardHeaderBg}">
+          <span class="${hasError ? 'text-red-500' : 'text-green-500'} text-lg">${cardHeaderIcon}</span>
+          <span class="font-bold ${cardHeaderText}">${cardHeaderLabel}</span>
+        </div>
+        <div data-steps-container class="divide-y divide-gray-100"></div>
+        <div data-error-hint class="hidden"></div>
+      </div>
+
+      <!-- Post-steps: score + actions + coupon (revealed after animation) -->
+      <div data-post-steps class="hidden space-y-6"></div>
+
+      <!-- Retry always visible -->
+      <button data-action="retry"
+        class="w-full py-3 rounded-lg border-2 font-bold text-sm transition-all hover:bg-gray-50 active:scale-95"
+        style="border-color: #00b9f0; color: #00b9f0;">
+        もう一度試す
+      </button>
+    </main>
+    ${buildFooter()}
+  `
+}
+
+function buildPostStepsHTML(result: QuizResult): string {
+  const hasScore = result.finalIntValue !== null
+
+  return `
+    ${hasScore ? buildScoreSection(result) : buildNoIntegerSection()}
+    ${hasScore ? buildShareButton(result) : ''}
+    ${hasScore ? buildCouponSection() : ''}
+  `
+}
+
+function buildStepRow(step: StepResult): string {
+  const isError = step.error !== null
+
+  return `
+    <div class="px-4 py-3 flex items-start gap-3 ${isError ? 'bg-red-50' : ''}">
+      <code class="text-xs text-gray-500 w-28 shrink-0 pt-0.5" style="font-family: var(--font-mono);">${escapeHtml(step.label)}</code>
+      <div class="flex-1 min-w-0">
+        ${
+          isError
+            ? `<span class="text-xs text-red-500">❌ ${escapeHtml(step.error ?? '')}</span>`
+            : `<div class="flex items-center gap-2 flex-wrap">
+                <span class="text-xs font-bold px-2 py-0.5 rounded-full ${step.isInteger ? 'bg-green-100 text-green-700' : 'bg-blue-50 text-blue-600'}">
+                  ${escapeHtml(step.type)}${step.isInteger ? ' ✓' : ''}
+                </span>
+                <span class="text-xs text-gray-400 truncate max-w-48" title="${escapeHtml(step.valuePreview)}" style="font-family: var(--font-mono);">
+                  ${escapeHtml(step.valuePreview)}
+                </span>
+              </div>`
+        }
+      </div>
+    </div>
+  `
+}
+
+function buildScoreSection(result: QuizResult): string {
+  const score = result.finalIntValue!
+  const level = getLevel(score)
+  const chainExpr = `"Lincwell".${result.chain.join('.')}`
+
+  return `
+    <div class="bg-white border-2 rounded-xl shadow-md overflow-hidden text-center" style="border-color: #00b9f0;">
+      <div class="px-4 py-2 text-white text-sm font-bold" style="background: #00b9f0;">あなたの診断結果</div>
+      <div class="p-6">
+        <div class="text-5xl mb-2">${level.emoji}</div>
+        <div class="text-2xl font-bold mb-1" style="font-family: var(--font-serif);">${level.name}</div>
+        <div class="text-sm text-gray-500 mb-4">${level.description}</div>
+        <div class="bg-gray-50 rounded-lg p-3 mb-3">
+          <div class="text-xs text-gray-400 mb-1">スコア</div>
+          <div class="text-3xl font-bold tabular-nums" style="color: #00b9f0;">${score.toLocaleString()}</div>
+        </div>
+        <code class="text-xs text-gray-400 break-all" style="font-family: var(--font-mono);">${escapeHtml(chainExpr)}</code>
+      </div>
+    </div>
+  `
+}
+
+function buildNoIntegerSection(): string {
+  return `
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
+      <div class="text-3xl mb-2">🤔</div>
+      <p class="text-sm font-bold text-amber-700 mb-2">最終結果が Integer ではありません</p>
+      <p class="text-xs text-amber-600 leading-relaxed">
+        Integer を返すメソッドチェーンを処方してください。<br>
+        <code class="font-mono">.size</code>、<code class="font-mono">.length</code>、<code class="font-mono">.sum</code> などで締めくくると Integer になります。
+      </p>
+    </div>
+  `
+}
+
+function buildShareButton(result: QuizResult): string {
+  const score = result.finalIntValue!
+  const level = getLevel(score)
+  const chainExpr = `"Lincwell".${result.chain.join('.')}`
+  const text = `Ruby 処方箋クイズで診断！\nスコア: ${score.toLocaleString()} / ${level.name} ${level.emoji}\n${chainExpr}\n#RubyKaigi2026 #ruby`
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(DEPLOY_URL)}`
+
+  return `
+    <a href="${escapeHtml(tweetUrl)}" target="_blank" rel="noopener noreferrer"
+      class="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-white font-bold text-sm transition-all hover:opacity-90 active:scale-95"
+      style="background: #000;">
+      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+      </svg>
+      X でシェア
+    </a>
+  `
+}
+
+function buildCouponSection(): string {
+  return `
+    <div class="bg-white border border-gray-200 rounded-xl p-4">
+      <div class="text-xs font-bold text-gray-400 mb-3 tracking-wider">オンライン診療クーポン</div>
+      <div class="border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 text-center mb-3">
+        <code class="text-lg font-bold tracking-widest" style="font-family: var(--font-mono);">${COUPON_CODE}</code>
+      </div>
+      <a href="${escapeHtml(COUPON_URL)}" target="_blank" rel="noopener noreferrer"
+        class="block text-center text-sm py-2 rounded-lg border transition-colors hover:bg-gray-50"
+        style="color: #00b9f0; border-color: #00b9f0;">
+        オンライン診療を利用する →
+      </a>
+    </div>
+  `
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
