@@ -51,8 +51,18 @@ export function mountQuizScreen(app: HTMLElement, rubyVersion: string, lang: Lan
       onSubmit(chain)
     })
 
-    // Drag & Drop reorder
+    // Drag & Drop reorder (mouse)
     bindDragDrop(
+      app,
+      () => chain,
+      (newChain) => {
+        chain = newChain
+        render()
+      },
+    )
+
+    // Touch-based reorder (mobile)
+    bindTouchDragDrop(
       app,
       () => chain,
       (newChain) => {
@@ -65,7 +75,7 @@ export function mountQuizScreen(app: HTMLElement, rubyVersion: string, lang: Lan
   render()
 }
 
-// ---------- Drag & Drop ----------
+// ---------- Drag & Drop (mouse) ----------
 
 function bindDragDrop(app: HTMLElement, getChain: () => MethodName[], setChain: (c: MethodName[]) => void): void {
   const items = app.querySelectorAll<HTMLElement>('[data-chain-index]')
@@ -109,6 +119,96 @@ function bindDragDrop(app: HTMLElement, getChain: () => MethodName[], setChain: 
       next.splice(idx, 0, moved!)
       setChain(next)
     })
+  })
+}
+
+// ---------- Drag & Drop (touch / mobile) ----------
+
+function bindTouchDragDrop(app: HTMLElement, getChain: () => MethodName[], setChain: (c: MethodName[]) => void): void {
+  const items = app.querySelectorAll<HTMLElement>('[data-chain-index]')
+  if (items.length === 0) return
+
+  let dragSrcIdx: number | null = null
+  let isDragging = false
+  let startY = 0
+
+  const cleanup = (): void => {
+    items.forEach((i) => {
+      i.classList.remove('drag-over')
+      i.classList.remove('drag-src')
+    })
+    dragSrcIdx = null
+    isDragging = false
+  }
+
+  items.forEach((item) => {
+    const srcIdx = parseInt(item.dataset['chainIndex']!, 10)
+
+    item.addEventListener(
+      'touchstart',
+      (e) => {
+        dragSrcIdx = srcIdx
+        startY = e.touches[0]!.clientY
+        isDragging = false
+      },
+      { passive: true },
+    )
+
+    item.addEventListener(
+      'touchmove',
+      (e) => {
+        if (dragSrcIdx === null) return
+        const touch = e.touches[0]!
+
+        if (!isDragging) {
+          // ドラッグ開始の閾値（8px）を超えたらドラッグとみなす
+          if (Math.abs(touch.clientY - startY) < 8) return
+          isDragging = true
+        }
+
+        // ページスクロールを止めてドラッグ優先にする
+        e.preventDefault()
+
+        item.classList.add('drag-src')
+        items.forEach((i) => i.classList.remove('drag-over'))
+
+        // タッチ座標の下にある要素を取得
+        const el = document.elementFromPoint(touch.clientX, touch.clientY)
+        const target = el?.closest<HTMLElement>('[data-chain-index]')
+        if (target !== null && target !== item) {
+          target.classList.add('drag-over')
+        }
+      },
+      { passive: false },
+    )
+
+    item.addEventListener(
+      'touchend',
+      (e) => {
+        if (!isDragging || dragSrcIdx === null) {
+          cleanup()
+          return
+        }
+
+        const touch = e.changedTouches[0]!
+        const el = document.elementFromPoint(touch.clientX, touch.clientY)
+        const target = el?.closest<HTMLElement>('[data-chain-index]')
+        const savedSrcIdx = dragSrcIdx
+
+        cleanup()
+
+        if (target !== null && target !== item) {
+          const tgtIdx = parseInt(target.dataset['chainIndex']!, 10)
+          const next = [...getChain()]
+          const [moved] = next.splice(savedSrcIdx, 1)
+          next.splice(tgtIdx, 0, moved!)
+          setChain(next)
+        }
+      },
+      { passive: true },
+    )
+
+    item.addEventListener('touchcancel', cleanup, { passive: true })
   })
 }
 
