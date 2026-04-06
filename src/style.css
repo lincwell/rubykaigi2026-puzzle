@@ -34,6 +34,13 @@
   opacity: 0.4;
 }
 
+/* タッチドラッグ中の元アイテム（プレースホルダー） */
+[data-chain-index].touch-drag-src {
+  opacity: 0.25;
+  border-style: dashed !important;
+  background-color: #f0fbff !important;
+}
+
 @layer base {
   *,
   *::before,

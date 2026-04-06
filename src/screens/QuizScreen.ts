@@ -131,12 +131,36 @@ function bindTouchDragDrop(app: HTMLElement, getChain: () => MethodName[], setCh
   let dragSrcIdx: number | null = null
   let isDragging = false
   let startY = 0
+  let ghost: HTMLElement | null = null
+
+  const createGhost = (source: HTMLElement, touchX: number, touchY: number): void => {
+    const rect = source.getBoundingClientRect()
+    ghost = source.cloneNode(true) as HTMLElement
+    ghost.classList.remove('drag-src', 'drag-over', 'touch-drag-src')
+    ghost.style.position = 'fixed'
+    ghost.style.width = `${rect.width}px`
+    ghost.style.left = `${touchX - rect.width / 2}px`
+    ghost.style.top = `${touchY - rect.height / 2}px`
+    ghost.style.pointerEvents = 'none'
+    ghost.style.zIndex = '9999'
+    ghost.style.boxShadow = '0 8px 28px rgba(0,0,0,0.22)'
+    ghost.style.transform = 'scale(1.06) rotate(1.5deg)'
+    ghost.style.borderColor = '#00b9f0'
+    ghost.style.margin = '0'
+    ghost.style.transition = 'none'
+    document.body.appendChild(ghost)
+  }
+
+  const moveGhost = (touchX: number, touchY: number): void => {
+    if (ghost === null) return
+    ghost.style.left = `${touchX - ghost.offsetWidth / 2}px`
+    ghost.style.top = `${touchY - ghost.offsetHeight / 2}px`
+  }
 
   const cleanup = (): void => {
-    items.forEach((i) => {
-      i.classList.remove('drag-over')
-      i.classList.remove('drag-src')
-    })
+    ghost?.remove()
+    ghost = null
+    items.forEach((i) => i.classList.remove('drag-over', 'touch-drag-src'))
     dragSrcIdx = null
     isDragging = false
   }
@@ -164,15 +188,18 @@ function bindTouchDragDrop(app: HTMLElement, getChain: () => MethodName[], setCh
           // ドラッグ開始の閾値（8px）を超えたらドラッグとみなす
           if (Math.abs(touch.clientY - startY) < 8) return
           isDragging = true
+          // ゴースト生成・元アイテムをプレースホルダー化
+          createGhost(item, touch.clientX, touch.clientY)
+          item.classList.add('touch-drag-src')
         }
 
         // ページスクロールを止めてドラッグ優先にする
         e.preventDefault()
 
-        item.classList.add('drag-src')
-        items.forEach((i) => i.classList.remove('drag-over'))
+        moveGhost(touch.clientX, touch.clientY)
 
-        // タッチ座標の下にある要素を取得
+        // ドロップ先のハイライト
+        items.forEach((i) => i.classList.remove('drag-over'))
         const el = document.elementFromPoint(touch.clientX, touch.clientY)
         const target = el?.closest<HTMLElement>('[data-chain-index]')
         if (target !== null && target !== item) {
