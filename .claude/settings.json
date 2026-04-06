@@ -1,6 +1,9 @@
-// .claude/settings.json
-// https://code.claude.com/docs/ja/permission-modes
 {
+  "autoUpdatesChannel": "stable",
+  "language": "japanese",
+  "cleanupPeriodDays": 14,
+  "showTurnDuration": true,
+  "spinnerTipsEnabled": false,
   "permissions": {
     "defaultMode": "auto"
   }

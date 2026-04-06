@@ -1,12 +1,13 @@
 import { getLevel, COUPON_CODE, COUPON_URL, type QuizResult, type StepResult } from '#/types'
 import { buildHeader, buildFooter } from '#/layout'
+import { t, type Lang } from '#/i18n'
 
 const DEPLOY_URL = 'https://lincwell.github.io/rubykaigi2026-puzzle/'
 
-export function mountResultScreen(app: HTMLElement, result: QuizResult, rubyVersion: string, onRetry: () => void): void {
-  app.innerHTML = buildSkeletonHTML(result, rubyVersion)
+export function mountResultScreen(app: HTMLElement, result: QuizResult, rubyVersion: string, lang: Lang, onRetry: () => void): void {
+  app.innerHTML = buildSkeletonHTML(result, rubyVersion, lang)
   app.querySelectorAll('[data-action="retry"]').forEach((el) => el.addEventListener('click', onRetry))
-  void animateSteps(app, result)
+  void animateSteps(app, result, lang)
 }
 
 // ---------- Animation ----------
@@ -15,7 +16,7 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function animateSteps(app: HTMLElement, result: QuizResult): Promise<void> {
+async function animateSteps(app: HTMLElement, result: QuizResult, lang: Lang): Promise<void> {
   const container = app.querySelector<HTMLElement>('[data-steps-container]')
   if (container === null) return
 
@@ -34,23 +35,23 @@ async function animateSteps(app: HTMLElement, result: QuizResult): Promise<void>
 
   // After all steps: show hint or score
   if (result.errorStep !== null) {
-    showErrorHint(app, result)
+    showErrorHint(app, result, lang)
   } else {
-    showPostSteps(app, result)
+    showPostSteps(app, result, lang)
   }
 }
 
-function showErrorHint(app: HTMLElement, result: QuizResult): void {
+function showErrorHint(app: HTMLElement, result: QuizResult, lang: Lang): void {
   const hintEl = app.querySelector<HTMLElement>('[data-error-hint]')
   if (hintEl === null) return
 
   const errorStep = result.steps[result.errorStep!]
   const prevStep = result.errorStep! > 0 ? result.steps[result.errorStep! - 1] : null
-  const hint = getErrorHint(errorStep?.error ?? '', errorStep?.label ?? '', prevStep?.type ?? '')
+  const hint = getErrorHint(lang, errorStep?.error ?? '', errorStep?.label ?? '', prevStep?.type ?? '')
 
   hintEl.innerHTML = `
     <div class="step-enter px-4 py-4 bg-amber-50 border-t border-amber-100">
-      <p class="text-xs font-bold text-amber-700 mb-2">💡 ヒント</p>
+      <p class="text-xs font-bold text-amber-700 mb-2">${t(lang, 'hintLabel')}</p>
       <p class="text-xs text-amber-800 leading-relaxed">${hint}</p>
     </div>
   `
@@ -58,11 +59,11 @@ function showErrorHint(app: HTMLElement, result: QuizResult): void {
   hintEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
 }
 
-function showPostSteps(app: HTMLElement, result: QuizResult): void {
+function showPostSteps(app: HTMLElement, result: QuizResult, lang: Lang): void {
   const postEl = app.querySelector<HTMLElement>('[data-post-steps]')
   if (postEl === null) return
 
-  postEl.innerHTML = buildPostStepsHTML(result)
+  postEl.innerHTML = buildPostStepsHTML(result, lang)
   postEl.classList.remove('hidden')
   postEl.classList.add('step-enter')
   postEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
@@ -70,67 +71,97 @@ function showPostSteps(app: HTMLElement, result: QuizResult): void {
 
 // ---------- Error hints ----------
 
-function getErrorHint(errorMsg: string, failedLabel: string, prevType: string): string {
+function getErrorHint(lang: Lang, errorMsg: string, failedLabel: string, prevType: string): string {
   const method = failedLabel.startsWith('.') ? failedLabel.slice(1) : failedLabel
 
   if (errorMsg.includes('NoMethodError')) {
     switch (method) {
       case 'chars':
       case 'bytes':
-        return `<code class="font-mono">.${method}</code> は <strong>String</strong> のメソッドです。
-          前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
-          <code class="font-mono">.to_s</code> や <code class="font-mono">.inspect</code> で文字列に変換してから試しましょう。`
+        return lang === 'ja'
+          ? `<code class="font-mono">.${method}</code> は <strong>String</strong> のメソッドです。
+             前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
+             <code class="font-mono">.to_s</code> や <code class="font-mono">.inspect</code> で文字列に変換してから試しましょう。`
+          : `<code class="font-mono">.${method}</code> is a <strong>String</strong> method.
+             The previous step returned <strong>${escapeHtml(prevType)}</strong>, so it cannot be called here.
+             Try converting to a String first with <code class="font-mono">.to_s</code> or <code class="font-mono">.inspect</code>.`
 
       case 'join':
-        return `<code class="font-mono">.join</code> は <strong>Array</strong> のメソッドです。
-          前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
-          <code class="font-mono">.chars</code>、<code class="font-mono">.bytes</code>、<code class="font-mono">.methods</code> などで Array にしてから使いましょう。`
+        return lang === 'ja'
+          ? `<code class="font-mono">.join</code> は <strong>Array</strong> のメソッドです。
+             前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
+             <code class="font-mono">.chars</code>、<code class="font-mono">.bytes</code>、<code class="font-mono">.methods</code> などで Array にしてから使いましょう。`
+          : `<code class="font-mono">.join</code> is an <strong>Array</strong> method.
+             The previous step returned <strong>${escapeHtml(prevType)}</strong>, so it cannot be called here.
+             Use <code class="font-mono">.chars</code>, <code class="font-mono">.bytes</code>, or <code class="font-mono">.methods</code> first to get an Array.`
 
       case 'sum':
         if (prevType === 'String') {
-          return `<code class="font-mono">String#sum</code> はチェックサムを返します（<code class="font-mono">Array#sum</code> の合計とは異なります）。
-            <code class="font-mono">.bytes</code> で整数配列に変換してから <code class="font-mono">.sum</code> を使うと byte の合計が取れます。`
+          return lang === 'ja'
+            ? `<code class="font-mono">String#sum</code> はチェックサムを返します（<code class="font-mono">Array#sum</code> の合計とは異なります）。
+               <code class="font-mono">.bytes</code> で整数配列に変換してから <code class="font-mono">.sum</code> を使うと byte の合計が取れます。`
+            : `<code class="font-mono">String#sum</code> returns a checksum (different from <code class="font-mono">Array#sum</code>).
+               Use <code class="font-mono">.bytes</code> to get an integer array first, then <code class="font-mono">.sum</code> to get the byte total.`
         }
-        return `<code class="font-mono">.sum</code> は <strong>Array</strong> または <strong>String</strong> のメソッドです。
-          前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
-          <code class="font-mono">.bytes</code> や <code class="font-mono">.methods</code> で Array にしてから使いましょう。`
+        return lang === 'ja'
+          ? `<code class="font-mono">.sum</code> は <strong>Array</strong> または <strong>String</strong> のメソッドです。
+             前のステップが <strong>${escapeHtml(prevType)}</strong> になっているため呼び出せません。
+             <code class="font-mono">.bytes</code> や <code class="font-mono">.methods</code> で Array にしてから使いましょう。`
+          : `<code class="font-mono">.sum</code> is a method on <strong>Array</strong> or <strong>String</strong>.
+             The previous step returned <strong>${escapeHtml(prevType)}</strong>, so it cannot be called here.
+             Use <code class="font-mono">.bytes</code> or <code class="font-mono">.methods</code> to get an Array first.`
 
       case 'size':
       case 'length':
-        return `<code class="font-mono">.${method}</code> をこの型（<strong>${escapeHtml(prevType)}</strong>）では使えません。
-          <code class="font-mono">.to_s</code> で文字列に変換してから試してみましょう。`
+        return lang === 'ja'
+          ? `<code class="font-mono">.${method}</code> をこの型（<strong>${escapeHtml(prevType)}</strong>）では使えません。
+             <code class="font-mono">.to_s</code> で文字列に変換してから試してみましょう。`
+          : `<code class="font-mono">.${method}</code> cannot be used on this type (<strong>${escapeHtml(prevType)}</strong>).
+             Try converting to a String with <code class="font-mono">.to_s</code> first.`
 
       default:
-        return `<code class="font-mono">.${escapeHtml(method)}</code> は <strong>${escapeHtml(prevType)}</strong> には定義されていません。
-          型遷移の表を参考にメソッドの順序を変えてみましょう。`
+        return lang === 'ja'
+          ? `<code class="font-mono">.${escapeHtml(method)}</code> は <strong>${escapeHtml(prevType)}</strong> には定義されていません。
+             型遷移の表を参考にメソッドの順序を変えてみましょう。`
+          : `<code class="font-mono">.${escapeHtml(method)}</code> is not defined on <strong>${escapeHtml(prevType)}</strong>.
+             Try reordering the methods based on the type transition table.`
     }
   }
 
   if (errorMsg.includes('TypeError')) {
     if (method === 'sum' && prevType === 'Array') {
-      return `Array の要素が Integer でないため <code class="font-mono">.sum</code> が失敗しました。
-        <code class="font-mono">.bytes</code> で整数の Array を作ってから <code class="font-mono">.sum</code> しましょう。`
+      return lang === 'ja'
+        ? `Array の要素が Integer でないため <code class="font-mono">.sum</code> が失敗しました。
+           <code class="font-mono">.bytes</code> で整数の Array を作ってから <code class="font-mono">.sum</code> しましょう。`
+        : `<code class="font-mono">.sum</code> failed because the Array elements are not Integers.
+           Use <code class="font-mono">.bytes</code> to create an Integer Array first, then call <code class="font-mono">.sum</code>.`
     }
-    return `型の変換に失敗しました（<strong>${escapeHtml(prevType)}</strong> → <code class="font-mono">.${escapeHtml(method)}</code>）。
-      メソッドの組み合わせを変えてみましょう。`
+    return lang === 'ja'
+      ? `型の変換に失敗しました（<strong>${escapeHtml(prevType)}</strong> → <code class="font-mono">.${escapeHtml(method)}</code>）。
+         メソッドの組み合わせを変えてみましょう。`
+      : `Type conversion failed (<strong>${escapeHtml(prevType)}</strong> → <code class="font-mono">.${escapeHtml(method)}</code>).
+         Try a different combination of methods.`
   }
 
-  return `<code class="font-mono">.${escapeHtml(method)}</code> の呼び出し中にエラーが発生しました。
-    型遷移の表を参考にメソッドの順序を確認してみましょう。`
+  return lang === 'ja'
+    ? `<code class="font-mono">.${escapeHtml(method)}</code> の呼び出し中にエラーが発生しました。
+       型遷移の表を参考にメソッドの順序を確認してみましょう。`
+    : `An error occurred while calling <code class="font-mono">.${escapeHtml(method)}</code>.
+       Check the method order based on the type transition table.`
 }
 
 // ---------- HTML builders ----------
 
-function buildSkeletonHTML(result: QuizResult, rubyVersion: string): string {
+function buildSkeletonHTML(result: QuizResult, rubyVersion: string, lang: Lang): string {
   const hasError = result.errorStep !== null
   const cardBorderColor = hasError ? '#fca5a5' : '#e5e7eb'
   const cardHeaderBg = hasError ? 'bg-red-50' : 'bg-gray-50'
   const cardHeaderText = hasError ? 'text-red-700' : 'text-gray-700'
   const cardHeaderIcon = hasError ? '⚠' : '✓'
-  const cardHeaderLabel = hasError ? '投与エラー' : '診断結果'
+  const cardHeaderLabel = hasError ? t(lang, 'labelAdminError') : t(lang, 'labelDiagnosis')
 
   return `
-    ${buildHeader(rubyVersion)}
+    ${buildHeader(rubyVersion, lang)}
     <main class="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <!-- Steps card -->
       <div class="bg-white rounded-xl shadow-sm overflow-hidden" style="border: 2px solid ${cardBorderColor};">
@@ -149,20 +180,20 @@ function buildSkeletonHTML(result: QuizResult, rubyVersion: string): string {
       <button data-action="retry"
         class="w-full py-3 rounded-lg border-2 font-bold text-sm transition-all hover:bg-gray-50 active:scale-95"
         style="border-color: #00b9f0; color: #00b9f0;">
-        もう一度試す
+        ${t(lang, 'btnRetry')}
       </button>
     </main>
-    ${buildFooter()}
+    ${buildFooter(lang)}
   `
 }
 
-function buildPostStepsHTML(result: QuizResult): string {
+function buildPostStepsHTML(result: QuizResult, lang: Lang): string {
   const hasScore = result.finalIntValue !== null
 
   return `
-    ${hasScore ? buildScoreSection(result) : buildNoIntegerSection()}
-    ${hasScore ? buildShareButton(result) : ''}
-    ${hasScore ? buildCouponSection() : ''}
+    ${hasScore ? buildScoreSection(result, lang) : buildNoIntegerSection(lang)}
+    ${hasScore ? buildShareButton(result, lang) : ''}
+    ${hasScore ? buildCouponSection(lang) : ''}
   `
 }
 
@@ -190,20 +221,22 @@ function buildStepRow(step: StepResult): string {
   `
 }
 
-function buildScoreSection(result: QuizResult): string {
+function buildScoreSection(result: QuizResult, lang: Lang): string {
   const score = result.finalIntValue!
   const level = getLevel(score)
+  const levelName = lang === 'ja' ? level.name : level.nameEn
+  const levelDesc = lang === 'ja' ? level.description : level.descriptionEn
   const chainExpr = `"Lincwell".${result.chain.join('.')}`
 
   return `
     <div class="bg-white border-2 rounded-xl shadow-md overflow-hidden text-center" style="border-color: #00b9f0;">
-      <div class="px-4 py-2 text-white text-sm font-bold" style="background: #00b9f0;">あなたの診断結果</div>
+      <div class="px-4 py-2 text-white text-sm font-bold" style="background: #00b9f0;">${t(lang, 'yourDiagnosis')}</div>
       <div class="p-6">
         <div class="text-5xl mb-2">${level.emoji}</div>
-        <div class="text-2xl font-bold mb-1" style="font-family: var(--font-serif);">${level.name}</div>
-        <div class="text-sm text-gray-500 mb-4">${level.description}</div>
+        <div class="text-2xl font-bold mb-1" style="font-family: var(--font-serif);">${levelName}</div>
+        <div class="text-sm text-gray-500 mb-4">${levelDesc}</div>
         <div class="bg-gray-50 rounded-lg p-3 mb-3">
-          <div class="text-xs text-gray-400 mb-1">スコア</div>
+          <div class="text-xs text-gray-400 mb-1">${t(lang, 'labelScore')}</div>
           <div class="text-3xl font-bold tabular-nums" style="color: #00b9f0;">${score.toLocaleString()}</div>
         </div>
         <code class="text-xs text-gray-400 break-all" style="font-family: var(--font-mono);">${escapeHtml(chainExpr)}</code>
@@ -212,25 +245,26 @@ function buildScoreSection(result: QuizResult): string {
   `
 }
 
-function buildNoIntegerSection(): string {
+function buildNoIntegerSection(lang: Lang): string {
   return `
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
       <div class="text-3xl mb-2">🤔</div>
-      <p class="text-sm font-bold text-amber-700 mb-2">最終結果が Integer ではありません</p>
+      <p class="text-sm font-bold text-amber-700 mb-2">${t(lang, 'noIntegerTitle')}</p>
       <p class="text-xs text-amber-600 leading-relaxed">
-        Integer を返すメソッドチェーンを処方してください。<br>
-        <code class="font-mono">.size</code>、<code class="font-mono">.length</code>、<code class="font-mono">.sum</code> などで締めくくると Integer になります。
+        ${t(lang, 'noIntegerDesc')}
       </p>
     </div>
   `
 }
 
-function buildShareButton(result: QuizResult): string {
+function buildShareButton(result: QuizResult, lang: Lang): string {
   const score = result.finalIntValue!
   const level = getLevel(score)
+  const levelName = lang === 'ja' ? level.name : level.nameEn
   const chainExpr = `"Lincwell".${result.chain.join('.')}`
-  const text = `Ruby 処方箋クイズで診断！\nスコア: ${score.toLocaleString()} / ${level.name} ${level.emoji}\n${chainExpr}\n#RubyKaigi2026 #ruby`
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(DEPLOY_URL)}`
+  const shareUrl = lang === 'en' ? `${DEPLOY_URL}en/` : DEPLOY_URL
+  const text = `${t(lang, 'shareIntro')}\n${t(lang, 'shareScoreLabel')}: ${score.toLocaleString()} / ${levelName} ${level.emoji}\n${chainExpr}\n#RubyKaigi2026 #ruby`
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
 
   return `
     <a href="${escapeHtml(tweetUrl)}" target="_blank" rel="noopener noreferrer"
@@ -239,22 +273,22 @@ function buildShareButton(result: QuizResult): string {
       <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
       </svg>
-      X でシェア
+      ${t(lang, 'btnShare')}
     </a>
   `
 }
 
-function buildCouponSection(): string {
+function buildCouponSection(lang: Lang): string {
   return `
     <div class="bg-white border border-gray-200 rounded-xl p-4">
-      <div class="text-xs font-bold text-gray-400 mb-3 tracking-wider">オンライン診療クーポン</div>
+      <div class="text-xs font-bold text-gray-400 mb-3 tracking-wider">${t(lang, 'couponTitle')}</div>
       <div class="border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 text-center mb-3">
         <code class="text-lg font-bold tracking-widest" style="font-family: var(--font-mono);">${COUPON_CODE}</code>
       </div>
       <a href="${escapeHtml(COUPON_URL)}" target="_blank" rel="noopener noreferrer"
         class="block text-center text-sm py-2 rounded-lg border transition-colors hover:bg-gray-50"
         style="color: #00b9f0; border-color: #00b9f0;">
-        オンライン診療を利用する →
+        ${t(lang, 'couponLink')}
       </a>
     </div>
   `

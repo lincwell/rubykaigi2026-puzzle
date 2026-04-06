@@ -1,14 +1,15 @@
 import { ALL_METHODS, type MethodName } from '#/types'
 import { buildHeader, buildFooter } from '#/layout'
+import { t, type Lang } from '#/i18n'
 
 type SubmitCallback = (chain: MethodName[]) => void
 
-export function mountQuizScreen(app: HTMLElement, rubyVersion: string, onSubmit: SubmitCallback): void {
+export function mountQuizScreen(app: HTMLElement, rubyVersion: string, lang: Lang, onSubmit: SubmitCallback): void {
   let chain: MethodName[] = []
   let submitting = false
 
   const render = (): void => {
-    app.innerHTML = buildHTML(chain, rubyVersion, submitting)
+    app.innerHTML = buildHTML(chain, rubyVersion, lang, submitting)
     bindEvents()
   }
 
@@ -113,92 +114,88 @@ function bindDragDrop(app: HTMLElement, getChain: () => MethodName[], setChain: 
 
 // ---------- HTML builders ----------
 
-function buildHTML(chain: MethodName[], rubyVersion: string, submitting: boolean): string {
+function buildHTML(chain: MethodName[], rubyVersion: string, lang: Lang, submitting: boolean): string {
   return `
-    ${buildHeader(rubyVersion)}
+    ${buildHeader(rubyVersion, lang)}
     <main class="max-w-2xl mx-auto px-4 py-8">
-      ${buildTitleBlock()}
-      ${buildPrescriptionCard(chain, submitting)}
+      ${buildTitleBlock(lang)}
+      ${buildPrescriptionCard(chain, lang, submitting)}
     </main>
-    ${buildFooter()}
+    ${buildFooter(lang)}
   `
 }
 
-function buildTitleBlock(): string {
+function buildTitleBlock(lang: Lang): string {
   return `
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold mb-4" style="color: #00b9f0;">お  く  す  り</h1>
-      <h2 class="inline-block text-lg font-medium text-white px-5 py-1.5 rounded-full mb-4 w-full" style="background: #00b9f0;">あなたの「Ruby力」を診断します</h2>
+      <h1 class="text-3xl font-bold mb-4" style="color: #00b9f0;">${t(lang, 'quizTitle')}</h1>
+      <h2 class="inline-block text-lg font-medium text-white px-5 py-1.5 rounded-full mb-4 w-full" style="background: #00b9f0;">${t(lang, 'quizSubtitle')}</h2>
       <p class="text-sm text-gray-500 leading-relaxed">
-        <code class="bg-gray-100 px-1 rounded text-sm">"Lincwell"</code>
-        を起点に、<span class="underline decoration-2 underline-offset-2">最大の整数</span>を返すメソッドチェーンを処方してください。
+        ${t(lang, 'quizDescHtml')}
       </p>
     </div>
   `
 }
 
-function buildPrescriptionCard(chain: MethodName[], submitting: boolean): string {
+function buildPrescriptionCard(chain: MethodName[], lang: Lang, submitting: boolean): string {
   return `
     <div class="bg-white border-2 rounded-xl shadow-md overflow-hidden" style="border-color: #00b9f0;">
       <div class="divide-y divide-[#00b9f0]/20">
 
-        <!-- 患  者 -->
+        <!-- Patient -->
         <div class="flex items-start gap-4 px-5 py-4">
-          <span class="text-xs font-bold text-gray-500 w-12 pt-1 shrink-0">患  者</span>
+          <span class="text-xs font-bold text-gray-500 w-14 pt-1 shrink-0">${t(lang, 'labelPatient')}</span>
           <code class="bg-gray-100 px-3 py-1 rounded text-sm" style="font-family: var(--font-mono);">"Lincwell"</code>
         </div>
 
-        <!-- 処  方 (method buttons) -->
+        <!-- Methods (method buttons) -->
         <div class="flex items-start gap-4 px-5 py-4">
-          <span class="text-xs font-bold text-gray-500 w-12 pt-1 shrink-0">処  方</span>
+          <span class="text-xs font-bold text-gray-500 w-14 pt-1 shrink-0">${t(lang, 'labelMethods')}</span>
           <div class="grid grid-cols-3 sm:grid-cols-4 gap-2 flex-1">
             ${ALL_METHODS.map((m) => buildMethodButton(m, chain)).join('')}
           </div>
         </div>
 
-        <!-- 用  法 -->
+        <!-- Directions -->
         <div class="flex items-start gap-4 px-5 py-4 text-xs text-gray-500">
-          <span class="font-bold w-12 shrink-0">用  法</span>
-          <span>上記メソッドをチェーンにて投与すること</span>
+          <span class="font-bold w-14 shrink-0">${t(lang, 'labelDirections')}</span>
+          <span>${t(lang, 'directionsText')}</span>
         </div>
 
-        <!-- 用  量 -->
+        <!-- Dosage -->
         <div class="flex items-start gap-4 px-5 py-4 text-xs text-gray-500">
-          <span class="font-bold w-12 shrink-0">用  量</span>
-          <span>各 1 回まで</span>
+          <span class="font-bold w-14 shrink-0">${t(lang, 'labelDosage')}</span>
+          <span>${t(lang, 'dosageText')}</span>
         </div>
 
-        <!-- 処方内容 + Submit -->
+        <!-- Prescription panel + Submit -->
         <div class="px-5 py-4 space-y-4">
+          ${buildChainPanel(chain, lang, submitting)}
 
-        <!-- 処方内容 (2-column: order list + code preview) -->
-        ${buildChainPanel(chain, submitting)}
-
-        <!-- Submit -->
-        <button data-action="submit"
-          class="w-full py-3 rounded-lg text-white font-bold text-sm tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          style="background: ${chain.length === 0 || submitting ? '#9ca3af' : '#00b9f0'};"
-          ${chain.length === 0 || submitting ? 'disabled' : ''}>
-          ${submitting ? '投与中...' : '投与する'}
-        </button>
-        </div><!-- /px-5 py-4 -->
-      </div><!-- /divide-y -->
-    </div><!-- /card -->
+          <button data-action="submit"
+            class="w-full py-3 rounded-lg text-white font-bold text-sm tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            style="background: ${chain.length === 0 || submitting ? '#9ca3af' : '#00b9f0'};"
+            ${chain.length === 0 || submitting ? 'disabled' : ''}>
+            ${submitting ? t(lang, 'btnSubmitting') : t(lang, 'btnSubmit')}
+          </button>
+        </div>
+      </div>
+    </div>
   `
 }
 
-function buildChainPanel(chain: MethodName[], submitting: boolean): string {
+function buildChainPanel(chain: MethodName[], lang: Lang, submitting: boolean): string {
   const empty = chain.length === 0
 
   return `
     <div class="border border-[#00b9f0]/30 rounded-lg overflow-hidden">
       <!-- Panel header -->
       <div class="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-[#00b9f0]/30">
-        <span class="text-xs font-bold text-gray-500">処方内容</span>
+        <span class="text-xs font-bold text-gray-500">${t(lang, 'labelPrescription')}</span>
         <button data-action="clear"
           class="text-xs text-gray-400 hover:text-red-400 disabled:opacity-30 transition-colors"
           ${empty || submitting ? 'disabled' : ''}>
-          クリア
+          ${t(lang, 'btnClear')}
         </button>
       </div>
 
@@ -206,13 +203,13 @@ function buildChainPanel(chain: MethodName[], submitting: boolean): string {
       <div class="flex divide-x divide-[#00b9f0]/20 min-h-28">
         <!-- Left: draggable order list -->
         <div class="w-1/2 p-3">
-          <p class="text-xs text-gray-400 mb-2">投与順序</p>
-          ${empty ? '<p class="text-xs text-gray-300 italic">← 処方を選択</p>' : chain.map((m, i) => buildChainItem(m, i, submitting)).join('')}
+          <p class="text-xs text-gray-400 mb-2">${t(lang, 'labelOrder')}</p>
+          ${empty ? `<p class="text-xs text-gray-300 italic">${t(lang, 'placeholderSelect')}</p>` : chain.map((m, i) => buildChainItem(m, i, submitting)).join('')}
         </div>
 
         <!-- Right: code expression -->
         <div class="w-1/2 p-3">
-          <p class="text-xs text-gray-400 mb-2">処方コード</p>
+          <p class="text-xs text-gray-400 mb-2">${t(lang, 'labelCode')}</p>
           <pre class="text-xs leading-relaxed" style="font-family: var(--font-mono);">${buildCodeLines(chain)}</pre>
         </div>
       </div>
@@ -229,7 +226,7 @@ function buildChainItem(m: MethodName, index: number, submitting: boolean): stri
       <span class="flex-1 text-xs text-gray-700 truncate" style="font-family: var(--font-mono);">.${m}</span>
       <button data-remove-index="${index}" draggable="false"
         class="text-gray-300 hover:text-red-400 transition-colors text-sm leading-none shrink-0 w-5 h-5 flex items-center justify-center rounded ${submitting ? 'pointer-events-none' : ''}"
-        aria-label=".${m} を削除">
+        aria-label=".${m}">
         ×
       </button>
     </div>

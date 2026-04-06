@@ -1,24 +1,41 @@
 import logoSvg from '#/images/logo.svg?raw'
+import type { Lang } from '#/i18n'
+import { t } from '#/i18n'
 
 const logo = logoSvg.replace(/class="[^"]*"/, 'style="height: 56px; width: auto;"')
 
-export function buildHeader(rubyVersion: string): string {
+export function buildHeader(rubyVersion: string, lang: Lang): string {
+  const base = import.meta.env.BASE_URL
+  const jaHref = base
+  const enHref = `${base}en/`
+
   return `
     <header class="bg-white border-b border-gray-200 sticky top-0 z-10">
       <div class="max-w-2xl mx-auto px-4 py-2 flex items-center justify-between">
-        <span class="text-xs text-gray-500" style="font-family: var(--font-mono);">ruby ${rubyVersion !== '' ? rubyVersion : '...'}</span>
-        <span class="text-xs text-gray-400">Ruby WASM</span>
+        <span class="text-xs text-gray-500" style="font-family: var(--font-mono);" data-ruby-version>ruby ${rubyVersion !== '' ? rubyVersion : '...'}</span>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1 text-xs font-bold">
+            <a href="${lang === 'en' ? jaHref : '#'}"
+               class="${lang === 'ja' ? 'text-[#00b9f0]' : 'text-gray-400 hover:text-gray-700 transition-colors'}"
+               ${lang === 'ja' ? 'aria-current="page"' : ''}>JA</a>
+            <span class="text-gray-300">/</span>
+            <a href="${lang === 'ja' ? enHref : '#'}"
+               class="${lang === 'en' ? 'text-[#00b9f0]' : 'text-gray-400 hover:text-gray-700 transition-colors'}"
+               ${lang === 'en' ? 'aria-current="page"' : ''}>EN</a>
+          </div>
+          <span class="text-xs text-gray-400">Ruby WASM</span>
+        </div>
       </div>
     </header>
   `
 }
 
-export function buildFooter(): string {
+export function buildFooter(lang: Lang): string {
   return `
     <footer class="mt-12 py-6">
       <div class="max-w-2xl mx-auto px-4 flex flex-col items-center gap-6">
         ${logo}
-        <p class="text-xs text-gray-400 text-center">※こちらのサイトは、実際の医薬品の服用や診断とは一切関係ありません。</p>
+        <p class="text-xs text-gray-400 text-center">${t(lang, 'footerDisclaimer')}</p>
       </div>
     </footer>
   `
