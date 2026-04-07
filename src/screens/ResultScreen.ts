@@ -1,4 +1,4 @@
-import { getLevel, COUPON_CODE, COUPON_URL, type QuizResult, type StepResult } from '#/types'
+import { getLevel, LEVELS, COUPON_CODE, COUPON_URL, type QuizResult, type StepResult } from '#/types'
 import { buildHeader, buildFooter } from '#/layout'
 import { t, type Lang } from '#/i18n'
 
@@ -182,6 +182,9 @@ function buildSkeletonHTML(result: QuizResult, rubyVersion: string, lang: Lang):
         style="border-color: #00b9f0; color: #00b9f0;">
         ${t(lang, 'btnRetry')}
       </button>
+
+      <!-- Disclaimer -->
+      <p class="text-[10px] text-gray-400 leading-relaxed text-center">${t(lang, 'resultDisclaimer')}</p>
     </main>
     ${buildFooter(lang)}
   `
@@ -221,6 +224,43 @@ function buildStepRow(step: StepResult): string {
   `
 }
 
+function buildLevelLadder(score: number, lang: Lang): string {
+  const currentLevel = getLevel(score)
+  const ladderLabel = lang === 'ja' ? '＼今回の診断結果／' : '＼ Your Result ／'
+
+  const parts: string[] = []
+  for (let i = 0; i < LEVELS.length; i++) {
+    const level = LEVELS[i]!
+    const isCurrent = level.minScore === currentLevel.minScore
+    const name = lang === 'ja' ? level.name : level.nameEn
+
+    if (isCurrent) {
+      parts.push(`
+        <div class="flex flex-col items-center shrink-0">
+          <span class="text-[9px] font-bold whitespace-nowrap leading-tight mb-1" style="color:#00b9f0;">${ladderLabel}</span>
+          <span class="text-xs font-bold leading-tight pb-0.5" style="color:#00b9f0; border-bottom: 2px solid #00b9f0;">${name}</span>
+        </div>
+      `)
+    } else {
+      parts.push(`<span class="text-[10px] text-gray-400 shrink-0 leading-tight">${name}</span>`)
+    }
+
+    if (i < LEVELS.length - 1) {
+      parts.push(`<span class="text-gray-300 text-[10px] shrink-0">＜</span>`)
+    }
+  }
+
+  return `
+    <div class="overflow-x-auto">
+      <div class="flex justify-center">
+        <div class="flex items-end gap-1.5 min-w-max py-2">
+          ${parts.join('')}
+        </div>
+      </div>
+    </div>
+  `
+}
+
 function buildScoreSection(result: QuizResult, lang: Lang): string {
   const score = result.finalIntValue!
   const level = getLevel(score)
@@ -235,7 +275,8 @@ function buildScoreSection(result: QuizResult, lang: Lang): string {
         <div class="text-5xl mb-2">${level.emoji}</div>
         <div class="text-2xl font-bold mb-1" style="font-family: var(--font-serif);">${levelName}</div>
         <div class="text-sm text-gray-500 mb-4">${levelDesc}</div>
-        <div class="bg-gray-50 rounded-lg p-3 mb-3">
+        ${buildLevelLadder(score, lang)}
+        <div class="bg-gray-50 rounded-lg p-3 mt-4 mb-3">
           <div class="text-xs text-gray-400 mb-1">${t(lang, 'labelScore')}</div>
           <div class="text-3xl font-bold tabular-nums" style="color: #00b9f0;">${score.toLocaleString()}</div>
         </div>
@@ -263,7 +304,7 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
   const levelName = lang === 'ja' ? level.name : level.nameEn
   const chainExpr = `"Lincwell".${result.chain.join('.')}`
   const shareUrl = lang === 'en' ? `${DEPLOY_URL}en/` : DEPLOY_URL
-  const text = `${t(lang, 'shareIntro')}\n${t(lang, 'shareScoreLabel')}: ${score.toLocaleString()} / ${levelName} ${level.emoji}\n${chainExpr}\n#RubyKaigi2026 #ruby`
+  const text = `${t(lang, 'shareIntro')}\n${t(lang, 'shareScoreLabel')}: ${score.toLocaleString()} / ${levelName} ${level.emoji}\n${chainExpr}\n#rubykaigi2026 #処方箋でRuby診断`
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
 
   return `

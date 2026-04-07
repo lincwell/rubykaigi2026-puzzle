@@ -34,6 +34,7 @@ export interface Translations {
   couponTitle: string
   couponLink: string
   btnRetry: string
+  resultDisclaimer: string
 
   // Share text parts
   shareIntro: string
@@ -72,6 +73,8 @@ const ja: Translations = {
   couponTitle: 'オンライン診療クーポン',
   couponLink: 'オンライン診療を利用する →',
   btnRetry: 'もう一度試す',
+  resultDisclaimer:
+    '※本診断結果は、Rubyのスキルレベルを弊社の独断と偏見で「医療ランク風」に表現したものであり、実在の医師免許、医療資格、および医学的診断とは一切関係ありません。用法・用量を守って正しくコードを書いてください。',
 
   shareIntro: 'Ruby 処方箋クイズで診断！',
   shareScoreLabel: 'スコア',
@@ -109,6 +112,8 @@ const en: Translations = {
   couponTitle: 'Online Consultation Coupon',
   couponLink: 'Use Online Consultation →',
   btnRetry: 'Try Again',
+  resultDisclaimer:
+    '※This diagnosis expresses your Ruby skill level in a "medical rank" style based entirely on our own subjective judgment, and has no relation whatsoever to actual medical licenses, qualifications, or diagnoses. Please follow proper usage and write your code responsibly.',
 
   shareIntro: 'Ruby Prescription Quiz!',
   shareScoreLabel: 'Score',

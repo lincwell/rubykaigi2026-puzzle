@@ -28,12 +28,13 @@ export type Level = {
 }
 
 export const LEVELS: Level[] = [
-  { name: '研修医', nameEn: 'Intern', description: 'Ruby のメソッドに触れはじめたばかり', descriptionEn: 'Just starting to explore Ruby methods', emoji: '🩺', minScore: 0 },
-  { name: '担当医', nameEn: 'Resident', description: 'メソッドチェーンの仕組みがわかってきた！', descriptionEn: 'Beginning to understand method chaining!', emoji: '💊', minScore: 100 },
-  { name: '専門医', nameEn: 'Specialist', description: 'ブロックや Enumerable を自然に使える', descriptionEn: 'Can use blocks and Enumerable naturally', emoji: '🧪', minScore: 1_000 },
-  { name: '主治医', nameEn: 'Attending Physician', description: 'Ruby の型変換を使いこなしている', descriptionEn: 'Masters Ruby type conversions', emoji: '🔬', minScore: 10_000 },
-  { name: '指導医', nameEn: 'Senior Physician', description: '設計や可読性まで意識して書ける', descriptionEn: 'Writes with design and readability in mind', emoji: '🏥', minScore: 50_000 },
-  { name: '名医', nameEn: 'Master', description: 'Ruby の奥深さを知り尽くした達人！', descriptionEn: "A master who knows Ruby's depth!", emoji: '⭐', minScore: 100_000 },
+  { name: '医学生',  nameEn: 'Medical Student',      description: 'まずは Ruby のメソッドを覚えよう！ここから全てが始まる！',          descriptionEn: 'Start by learning Ruby methods — every expert begins here!',         emoji: '📚', minScore: 0 },
+  { name: '研修医',  nameEn: 'Intern',                description: 'メソッドチェーンの基礎が身についてきた！この調子で続けよう！',        descriptionEn: 'Method chaining basics are clicking! Keep up the momentum!',         emoji: '🩺', minScore: 100 },
+  { name: '専攻医',  nameEn: 'Resident',              description: '型変換の仕組みがわかってきた。どんどん伸びている！',                  descriptionEn: 'Type conversions are making sense. You\'re growing fast!',          emoji: '💊', minScore: 1_000 },
+  { name: '専門医',  nameEn: 'Specialist',            description: 'Ruby を自信を持って使いこなせている！さらに上を目指せ！',             descriptionEn: 'You\'re wielding Ruby with confidence! Aim even higher!',           emoji: '🧪', minScore: 10_000 },
+  { name: '指導医',  nameEn: 'Attending Physician',   description: '深い理解で Ruby を書けている。その実力、素晴らしい！',               descriptionEn: 'Your deep Ruby understanding really shows. Outstanding!',           emoji: '🔬', minScore: 50_000 },
+  { name: '助教授',  nameEn: 'Associate Professor',   description: 'Ruby の奥義に迫ってきた。頂点まであと一歩！',                       descriptionEn: 'Approaching the pinnacle of Ruby mastery. Almost there!',           emoji: '🏥', minScore: 100_000 },
+  { name: '教授',    nameEn: 'Professor',             description: '完璧！Ruby の真の実力者、あなたこそが頂点だ！',                      descriptionEn: 'Flawless! You stand at the very top — a true Ruby master!',         emoji: '⭐', minScore: 500_000 },
 ]
 
 export function getLevel(score: number): Level {
