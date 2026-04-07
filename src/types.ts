@@ -45,6 +45,3 @@ export function getLevel(score: number): Level {
   return result
 }
 
-// TODO: 実際のクーポンコードと URL に差し替える
-export const COUPON_CODE = 'RUBYKAIGI2026'
-export const COUPON_URL = 'https://linc-well.com/'

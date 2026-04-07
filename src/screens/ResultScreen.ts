@@ -1,4 +1,4 @@
-import { getLevel, LEVELS, COUPON_CODE, COUPON_URL, type QuizResult, type StepResult } from '#/types'
+import { getLevel, LEVELS, type QuizResult, type StepResult } from '#/types'
 import { buildHeader, buildFooter } from '#/layout'
 import { t, type Lang } from '#/i18n'
 
@@ -173,7 +173,7 @@ function buildSkeletonHTML(result: QuizResult, rubyVersion: string, lang: Lang):
         <div data-error-hint class="hidden"></div>
       </div>
 
-      <!-- Post-steps: score + actions + coupon (revealed after animation) -->
+      <!-- Post-steps: score + share + recruit (revealed after animation) -->
       <div data-post-steps class="hidden space-y-6"></div>
 
       <!-- Retry always visible -->
@@ -196,7 +196,7 @@ function buildPostStepsHTML(result: QuizResult, lang: Lang): string {
   return `
     ${hasScore ? buildScoreSection(result, lang) : buildNoIntegerSection(lang)}
     ${hasScore ? buildShareButton(result, lang) : ''}
-    ${hasScore ? buildCouponSection(lang) : ''}
+    ${buildRecruitSection(lang)}
   `
 }
 
@@ -251,11 +251,9 @@ function buildLevelLadder(score: number, lang: Lang): string {
   }
 
   return `
-    <div class="overflow-x-auto">
-      <div class="flex justify-center">
-        <div class="flex items-end gap-1.5 min-w-max py-2">
-          ${parts.join('')}
-        </div>
+    <div class="overflow-x-auto text-center">
+      <div class="inline-flex items-end gap-1.5 py-2">
+        ${parts.join('')}
       </div>
     </div>
   `
@@ -319,19 +317,22 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
   `
 }
 
-function buildCouponSection(lang: Lang): string {
+const RECRUIT_URL = 'https://recruit.linc-well.com/engineer?utm_source=rubykaigi2026-puzzle'
+
+function buildRecruitSection(lang: Lang): string {
   return `
-    <div class="bg-white border border-gray-200 rounded-xl p-4">
-      <div class="text-xs font-bold text-gray-400 mb-3 tracking-wider">${t(lang, 'couponTitle')}</div>
-      <div class="border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 text-center mb-3">
-        <code class="text-lg font-bold tracking-widest" style="font-family: var(--font-mono);">${COUPON_CODE}</code>
+    <a href="${RECRUIT_URL}" target="_blank" rel="noopener noreferrer"
+      class="block rounded-xl overflow-hidden shadow-sm transition-opacity hover:opacity-90 active:opacity-80"
+      style="background: linear-gradient(135deg, #0097c9 0%, #00b9f0 60%, #33ccff 100%);">
+      <div class="px-5 py-5">
+        <p class="text-xs font-bold text-white/70 mb-2 tracking-wider uppercase">Recruit</p>
+        <p class="text-base font-bold text-white leading-snug mb-3">${t(lang, 'recruitHeading')}</p>
+        <p class="text-xs text-white/85 leading-relaxed mb-4">${t(lang, 'recruitDesc')}</p>
+        <span class="inline-block text-xs font-bold text-white border border-white/60 rounded-full px-4 py-1.5">
+          ${t(lang, 'recruitBtn')}
+        </span>
       </div>
-      <a href="${escapeHtml(COUPON_URL)}" target="_blank" rel="noopener noreferrer"
-        class="block text-center text-sm py-2 rounded-lg border transition-colors hover:bg-gray-50"
-        style="color: #00b9f0; border-color: #00b9f0;">
-        ${t(lang, 'couponLink')}
-      </a>
-    </div>
+    </a>
   `
 }
 
