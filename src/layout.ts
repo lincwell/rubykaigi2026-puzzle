@@ -32,10 +32,21 @@ export function buildHeader(rubyVersion: string, lang: Lang): string {
 
 export function buildFooter(lang: Lang): string {
   return `
-    <footer class="mt-12 py-6">
-      <div class="max-w-2xl mx-auto px-4 flex flex-col items-center gap-6">
+    <footer class="mt-12 py-6 border-t border-gray-100">
+      <div class="max-w-2xl mx-auto px-4 flex flex-col items-center gap-4">
         ${logo}
         <p class="text-xs text-gray-400 text-center">${t(lang, 'footerDisclaimer')}</p>
+        <div class="flex flex-wrap justify-center gap-x-4 gap-y-1">
+          <a href="https://linc-well.com/security-policy/" target="_blank" rel="noopener noreferrer"
+            class="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+            ${lang === 'ja' ? '情報セキュリティ方針' : 'Security Policy'}
+          </a>
+          <a href="https://linc-well.com/privacy-policy/" target="_blank" rel="noopener noreferrer"
+            class="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+            ${lang === 'ja' ? 'プライバシーポリシー' : 'Privacy Policy'}
+          </a>
+        </div>
+        <p class="text-[10px] text-gray-300">©Linc' well inc.</p>
       </div>
     </footer>
   `
