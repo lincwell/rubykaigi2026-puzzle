@@ -182,9 +182,6 @@ function buildSkeletonHTML(result: QuizResult, rubyVersion: string, lang: Lang):
         style="border-color: #00b9f0; color: #00b9f0;">
         ${t(lang, 'btnRetry')}
       </button>
-
-      <!-- Disclaimer -->
-      <p class="text-[10px] text-gray-400 leading-relaxed text-center">${t(lang, 'resultDisclaimer')}</p>
     </main>
     ${buildFooter(lang)}
   `
@@ -271,7 +268,7 @@ function buildScoreSection(result: QuizResult, lang: Lang): string {
       <div class="px-4 py-2 text-white text-sm font-bold" style="background: #00b9f0;">${t(lang, 'yourDiagnosis')}</div>
       <div class="p-6">
         <div class="text-5xl mb-2">${level.emoji}</div>
-        <div class="text-2xl font-bold mb-1" style="font-family: var(--font-serif);">${levelName}</div>
+        <div class="text-2xl font-bold mb-1" style="font-family: var(--font-serif);">Ruby ${levelName}</div>
         <div class="text-sm text-gray-500 mb-4">${levelDesc}</div>
         ${buildLevelLadder(score, lang)}
         <div class="bg-gray-50 rounded-lg p-3 mt-4 mb-3">
