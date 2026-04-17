@@ -6,7 +6,10 @@ const DEPLOY_URL = 'https://lincwell.github.io/rubykaigi2026-puzzle/'
 
 export function mountResultScreen(app: HTMLElement, result: QuizResult, rubyVersion: string, lang: Lang, onRetry: () => void): void {
   app.innerHTML = buildSkeletonHTML(result, rubyVersion, lang)
-  app.querySelectorAll('[data-action="retry"]').forEach((el) => el.addEventListener('click', onRetry))
+  // event delegation — アニメーション後に動的追加されるボタンも捕捉できる
+  app.addEventListener('click', (e) => {
+    if ((e.target as Element).closest('[data-action="retry"]') !== null) onRetry()
+  })
   void animateSteps(app, result, lang)
 }
 
@@ -50,9 +53,14 @@ function showErrorHint(app: HTMLElement, result: QuizResult, lang: Lang): void {
   const hint = getErrorHint(lang, errorStep?.error ?? '', errorStep?.label ?? '', prevStep?.type ?? '')
 
   hintEl.innerHTML = `
-    <div class="step-enter px-4 py-4 bg-amber-50 border-t border-amber-100">
-      <p class="text-xs font-bold text-amber-700 mb-2">${t(lang, 'hintLabel')}</p>
+    <div class="step-enter px-4 py-4 bg-amber-50 border-t border-amber-100 space-y-3">
+      <p class="text-xs font-bold text-amber-700">${t(lang, 'hintLabel')}</p>
       <p class="text-xs text-amber-800 leading-relaxed">${hint}</p>
+      <button data-action="retry"
+        class="w-full py-2.5 rounded-lg border-2 font-bold text-sm transition-all hover:bg-white active:scale-95"
+        style="border-color: #00b9f0; color: #00b9f0;">
+        ${t(lang, 'btnRetry')}
+      </button>
     </div>
   `
   hintEl.classList.remove('hidden')
@@ -176,12 +184,6 @@ function buildSkeletonHTML(result: QuizResult, rubyVersion: string, lang: Lang):
       <!-- Post-steps: score + share + recruit (revealed after animation) -->
       <div data-post-steps class="hidden space-y-6"></div>
 
-      <!-- Retry always visible -->
-      <button data-action="retry"
-        class="w-full py-3 rounded-lg border-2 font-bold text-sm transition-all hover:bg-gray-50 active:scale-95"
-        style="border-color: #00b9f0; color: #00b9f0;">
-        ${t(lang, 'btnRetry')}
-      </button>
     </main>
     ${buildFooter(lang)}
   `
@@ -192,7 +194,6 @@ function buildPostStepsHTML(result: QuizResult, lang: Lang): string {
 
   return `
     ${hasScore ? buildScoreSection(result, lang) : buildNoIntegerSection(lang)}
-    ${hasScore ? buildShareButton(result, lang) : ''}
     ${buildRecruitSection(lang)}
   `
 }
@@ -269,13 +270,21 @@ function buildScoreSection(result: QuizResult, lang: Lang): string {
       <div class="p-6">
         <div class="text-5xl mb-2">${level.emoji}</div>
         <div class="text-2xl font-bold mb-1" style="font-family: var(--font-serif);">Ruby ${levelName}</div>
-        <div class="text-sm text-gray-500 mb-4">${levelDesc}</div>
+        <div class="text-xs text-gray-500 mb-4">${levelDesc}</div>
         ${buildLevelLadder(score, lang)}
         <div class="bg-gray-50 rounded-lg p-3 mt-4 mb-3">
           <div class="text-xs text-gray-400 mb-1">${t(lang, 'labelScore')}</div>
-          <div class="text-3xl font-bold tabular-nums" style="color: #00b9f0;">${score.toLocaleString()}</div>
+          <div class="text-4xl font-bold tabular-nums" style="color: #00b9f0;">${score.toLocaleString()}</div>
         </div>
         <code class="text-xs text-gray-400 break-all" style="font-family: var(--font-mono);">${escapeHtml(chainExpr)}</code>
+        <div class="mt-5 space-y-3">
+          ${buildShareButton(result, lang)}
+          <button data-action="retry"
+            class="w-full py-3 rounded-lg border-2 font-bold text-sm transition-all hover:bg-gray-50 active:scale-95"
+            style="border-color: #00b9f0; color: #00b9f0;">
+            ${t(lang, 'btnRetry')}
+          </button>
+        </div>
       </div>
     </div>
   `
@@ -286,9 +295,14 @@ function buildNoIntegerSection(lang: Lang): string {
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 text-center">
       <div class="text-3xl mb-2">🤔</div>
       <p class="text-sm font-bold text-amber-700 mb-2">${t(lang, 'noIntegerTitle')}</p>
-      <p class="text-xs text-amber-600 leading-relaxed">
+      <p class="text-xs text-amber-600 leading-relaxed mb-4">
         ${t(lang, 'noIntegerDesc')}
       </p>
+      <button data-action="retry"
+        class="w-full py-3 rounded-lg border-2 font-bold text-sm transition-all hover:bg-white active:scale-95"
+        style="border-color: #00b9f0; color: #00b9f0;">
+        ${t(lang, 'btnRetry')}
+      </button>
     </div>
   `
 }
@@ -299,17 +313,46 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
   const levelName = lang === 'ja' ? level.name : level.nameEn
   const chainExpr = `"Lincwell".${result.chain.join('.')}`
   const shareUrl = lang === 'en' ? `${DEPLOY_URL}en/` : DEPLOY_URL
-  const text = `${t(lang, 'shareIntro')}\n${t(lang, 'shareScoreLabel')}: ${score.toLocaleString()} / ${levelName} ${level.emoji}\n${chainExpr}\n#rubykaigi2026 #処方箋でRuby診断`
+
+  const jaText = [
+    '私のRuby力は……',
+    '',
+    '◤￣￣￣￣￣￣￣￣￣￣',
+    `スコア: ${score.toLocaleString()} / ${levelName} ${level.emoji}`,
+    chainExpr,
+    '＿＿＿＿＿＿＿＿＿＿◢',
+    '',
+    'あなたも #処方箋でRuby診断 に挑戦！',
+    '#rubykaigi2026',
+  ].join('\n')
+
+  const enText = [
+    'My Ruby skills...',
+    '',
+    '◤￣￣￣￣￣￣￣￣￣￣',
+    `Score: ${score.toLocaleString()} / ${levelName} ${level.emoji}`,
+    chainExpr,
+    '＿＿＿＿＿＿＿＿＿＿◢',
+    '',
+    'Try #処方箋でRuby診断 too!',
+    '#rubykaigi2026',
+  ].join('\n')
+
+  const text = lang === 'ja' ? jaText : enText
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
+  const ladderLabel = lang === 'ja' ? 'あなたの「Ruby力」をSNSで共有しよう！' : 'Share your Ruby skills on social media!'
 
   return `
+    <div class="text-xs text-gray-400 mb-1 flex items-center justify-center">
+      <span class="text-xl pr-3">\\</span>
+      <span>${ladderLabel}</span>
+      <span class="text-xl pl-3">/</span>
+    </div>
     <a href="${escapeHtml(tweetUrl)}" target="_blank" rel="noopener noreferrer"
-      class="flex items-center justify-center gap-2 w-full py-3 rounded-lg text-white font-bold text-sm transition-all hover:opacity-90 active:scale-95"
+      class="flex flex-col items-center justify-center w-full py-3 rounded-lg text-white font-bold transition-all hover:opacity-90 active:scale-95"
       style="background: #000;">
-      <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-      </svg>
-      ${t(lang, 'btnShare')}
+      <span class="text-sm">${t(lang, 'btnShare')}</span>
+      <span class="text-xs font-normal pt-1" style="color: rgba(255,255,255,0.55);">${t(lang, 'btnShareSubText')}</span>
     </a>
   `
 }

@@ -31,6 +31,7 @@ export interface Translations {
   noIntegerTitle: string
   noIntegerDesc: string
   btnShare: string
+  btnShareSubText: string
   recruitHeading: string
   recruitDesc: string
   recruitBtn: string
@@ -70,7 +71,8 @@ const ja: Translations = {
   noIntegerTitle: '最終結果が Integer ではありません',
   noIntegerDesc:
     'Integer を返すメソッドチェーンを処方してください。<br><code class="font-mono">.size</code>、<code class="font-mono">.length</code>、<code class="font-mono">.sum</code> などで締めくくると Integer になります。',
-  btnShare: 'X でシェア',
+  btnShare: '診断結果を X でシェア',
+  btnShareSubText: '#処方箋でRuby診断',
   recruitHeading: '医療DXの最前線。Rubyの力で、医療の未来を変える',
   recruitDesc: "Linc'wellは、Rubyの可能性を信じ、技術の力で「次世代の当たり前」を築く仲間を求めています。",
   recruitBtn: 'エンジニア採用ページへ →',
@@ -110,7 +112,8 @@ const en: Translations = {
   noIntegerTitle: 'Final result is not an Integer',
   noIntegerDesc:
     'Please prescribe a method chain that returns an Integer.<br><code class="font-mono">.size</code>, <code class="font-mono">.length</code>, or <code class="font-mono">.sum</code> at the end will return an Integer.',
-  btnShare: 'Share on X',
+  btnShare: 'Share your results on X',
+  btnShareSubText: '#処方箋でRuby診断',
   recruitHeading: "At the Forefront of Medical DX. Changing Healthcare's Future with Ruby.",
   recruitDesc: "Linc'well believes in the power of Ruby and seeks passionate engineers to build the next standard of healthcare.",
   recruitBtn: 'View Engineering Careers →',
