@@ -1,7 +1,6 @@
 import { getLevel, LEVELS, type QuizResult, type StepResult } from '#/types'
 import { buildHeader, buildFooter } from '#/layout'
 import { t, type Lang } from '#/i18n'
-import umami from '@umami/node';
 
 const DEPLOY_URL = 'https://lincwell.github.io/rubykaigi2026-puzzle/'
 
@@ -267,7 +266,11 @@ function buildScoreSection(result: QuizResult, lang: Lang): string {
   const levelDesc = lang === 'ja' ? level.description : level.descriptionEn
   const chainExpr = `"Lincwell".${result.chain.join('.')}`
 
-  umami.track('view-score', { level: levelName, score: score.toLocaleString(), chain: chainExpr });
+  window.umami?.track('view-score', {
+    levelName,
+    score,
+    chainExpr,
+  });
 
   return `
     <div class="bg-white border-2 rounded-xl shadow-md overflow-hidden text-center" style="border-color: #00b9f0;">
