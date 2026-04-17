@@ -38,11 +38,15 @@ export function buildFooter(lang: Lang): string {
         <p class="text-xs text-gray-400 text-center">${t(lang, 'footerDisclaimer')}</p>
         <div class="flex flex-wrap justify-center gap-x-4 gap-y-1">
           <a href="https://linc-well.com/security-policy/" target="_blank" rel="noopener noreferrer"
-            class="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+            class="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+            data-umami-event="outbound-link-click"
+            data-umami-event-url="https://linc-well.com/security-policy/">
             ${lang === 'ja' ? '情報セキュリティ方針' : 'Security Policy'}
           </a>
           <a href="https://linc-well.com/privacy-policy/" target="_blank" rel="noopener noreferrer"
-            class="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+            class="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
+            data-umami-event="outbound-link-click"
+            data-umami-event-url="https://linc-well.com/privacy-policy/">
             ${lang === 'ja' ? 'プライバシーポリシー' : 'Privacy Policy'}
           </a>
         </div>

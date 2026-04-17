@@ -203,7 +203,7 @@ function bindTouchDragDrop(app: HTMLElement, getChain: () => MethodName[], setCh
         const el = document.elementFromPoint(touch.clientX, touch.clientY)
         const target = el?.closest<HTMLElement>('[data-chain-index]')
         if (target !== null && target !== item) {
-          target.classList.add('drag-over')
+          target?.classList.add('drag-over')
         }
       },
       { passive: false },
@@ -225,6 +225,8 @@ function bindTouchDragDrop(app: HTMLElement, getChain: () => MethodName[], setCh
         cleanup()
 
         if (target !== null && target !== item) {
+          if (target === undefined) return
+
           const tgtIdx = parseInt(target.dataset['chainIndex']!, 10)
           const next = [...getChain()]
           const [moved] = next.splice(savedSrcIdx, 1)
@@ -300,6 +302,7 @@ function buildPrescriptionCard(chain: MethodName[], lang: Lang, submitting: bool
           ${buildChainPanel(chain, lang, submitting)}
 
           <button data-action="submit"
+            data-umami-event="submit-prescription"
             class="w-full py-3 rounded-lg text-white font-bold text-sm tracking-wide transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             style="background: ${chain.length === 0 || submitting ? '#9ca3af' : '#00b9f0'};"
             ${chain.length === 0 || submitting ? 'disabled' : ''}>

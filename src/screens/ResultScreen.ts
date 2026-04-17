@@ -349,6 +349,8 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
       <span class="text-xl pl-3">/</span>
     </div>
     <a href="${escapeHtml(tweetUrl)}" target="_blank" rel="noopener noreferrer"
+      data-umami-event="outbound-link-click"
+      data-umami-event-url="${escapeHtml(tweetUrl)}"
       class="flex flex-col items-center justify-center w-full py-3 rounded-lg text-white font-bold transition-all hover:opacity-90 active:scale-95"
       style="background: #000;">
       <span class="text-sm">${t(lang, 'btnShare')}</span>
@@ -362,6 +364,8 @@ const RECRUIT_URL = 'https://recruit.linc-well.com/engineer?utm_source=rubykaigi
 function buildRecruitSection(lang: Lang): string {
   return `
     <a href="${RECRUIT_URL}" target="_blank" rel="noopener noreferrer"
+      data-umami-event="outbound-link-click"
+      data-umami-event-url="${RECRUIT_URL}"
       class="block rounded-xl overflow-hidden shadow-sm transition-opacity hover:opacity-90 active:opacity-80"
       style="background: linear-gradient(135deg, #0097c9 0%, #00b9f0 60%, #33ccff 100%);">
       <div class="px-5 py-5">
