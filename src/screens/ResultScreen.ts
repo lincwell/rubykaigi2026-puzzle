@@ -1,6 +1,7 @@
 import { getLevel, LEVELS, type QuizResult, type StepResult } from '#/types'
 import { buildHeader, buildFooter } from '#/layout'
 import { t, type Lang } from '#/i18n'
+import umami from '@umami/node';
 
 const DEPLOY_URL = 'https://lincwell.github.io/rubykaigi2026-puzzle/'
 
@@ -57,6 +58,8 @@ function showErrorHint(app: HTMLElement, result: QuizResult, lang: Lang): void {
       <p class="text-xs font-bold text-amber-700">${t(lang, 'hintLabel')}</p>
       <p class="text-xs text-amber-800 leading-relaxed">${hint}</p>
       <button data-action="retry"
+        data-umami-event="retry-button"
+        data-umami-event-type="error-hint"
         class="w-full py-2.5 rounded-lg border-2 font-bold text-sm transition-all hover:bg-white active:scale-95"
         style="border-color: #00b9f0; color: #00b9f0;">
         ${t(lang, 'btnRetry')}
@@ -264,6 +267,8 @@ function buildScoreSection(result: QuizResult, lang: Lang): string {
   const levelDesc = lang === 'ja' ? level.description : level.descriptionEn
   const chainExpr = `"Lincwell".${result.chain.join('.')}`
 
+  umami.track('view-score', { level: levelName, score: score.toLocaleString(), chain: chainExpr });
+
   return `
     <div class="bg-white border-2 rounded-xl shadow-md overflow-hidden text-center" style="border-color: #00b9f0;">
       <div class="px-4 py-2 text-white text-sm font-bold" style="background: #00b9f0;">${t(lang, 'yourDiagnosis')}</div>
@@ -280,6 +285,8 @@ function buildScoreSection(result: QuizResult, lang: Lang): string {
         <div class="mt-5 space-y-3">
           ${buildShareButton(result, lang)}
           <button data-action="retry"
+            data-umami-event="retry"
+            data-umami-event-type="view-score"
             class="w-full py-3 rounded-lg border-2 font-bold text-sm transition-all hover:bg-gray-50 active:scale-95"
             style="border-color: #00b9f0; color: #00b9f0;">
             ${t(lang, 'btnRetry')}
@@ -299,6 +306,8 @@ function buildNoIntegerSection(lang: Lang): string {
         ${t(lang, 'noIntegerDesc')}
       </p>
       <button data-action="retry"
+        data-umami-event="retry"
+        data-umami-event-type="no-integer"
         class="w-full py-3 rounded-lg border-2 font-bold text-sm transition-all hover:bg-white active:scale-95"
         style="border-color: #00b9f0; color: #00b9f0;">
         ${t(lang, 'btnRetry')}
@@ -316,24 +325,20 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
 
   const jaText = [
     '私のRuby力は……',
-    '',
     '◤￣￣￣￣￣￣￣￣￣￣',
     `スコア: ${score.toLocaleString()} / ${levelName} ${level.emoji}`,
     chainExpr,
     '＿＿＿＿＿＿＿＿＿＿◢',
-    '',
     'あなたも #処方箋でRuby診断 に挑戦！',
     '#rubykaigi2026',
   ].join('\n')
 
   const enText = [
     'My Ruby skills...',
-    '',
     '◤￣￣￣￣￣￣￣￣￣￣',
     `Score: ${score.toLocaleString()} / ${levelName} ${level.emoji}`,
     chainExpr,
     '＿＿＿＿＿＿＿＿＿＿◢',
-    '',
     'Try #処方箋でRuby診断 too!',
     '#rubykaigi2026',
   ].join('\n')
@@ -349,7 +354,7 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
       <span class="text-xl pl-3">/</span>
     </div>
     <a href="${escapeHtml(tweetUrl)}" target="_blank" rel="noopener noreferrer"
-      data-umami-event="outbound-link-click"
+      data-umami-event="outbound-tweet-url-click"
       data-umami-event-url="${escapeHtml(tweetUrl)}"
       class="flex flex-col items-center justify-center w-full py-3 rounded-lg text-white font-bold transition-all hover:opacity-90 active:scale-95"
       style="background: #000;">
@@ -364,7 +369,7 @@ const RECRUIT_URL = 'https://recruit.linc-well.com/engineer?utm_source=rubykaigi
 function buildRecruitSection(lang: Lang): string {
   return `
     <a href="${RECRUIT_URL}" target="_blank" rel="noopener noreferrer"
-      data-umami-event="outbound-link-click"
+      data-umami-event="outbound-recruit-click"
       data-umami-event-url="${RECRUIT_URL}"
       class="block rounded-xl overflow-hidden shadow-sm transition-opacity hover:opacity-90 active:opacity-80"
       style="background: linear-gradient(135deg, #0097c9 0%, #00b9f0 60%, #33ccff 100%);">
