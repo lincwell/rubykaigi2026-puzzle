@@ -57,7 +57,7 @@ function showErrorHint(app: HTMLElement, result: QuizResult, lang: Lang): void {
       <p class="text-xs font-bold text-amber-700">${t(lang, 'hintLabel')}</p>
       <p class="text-xs text-amber-800 leading-relaxed">${hint}</p>
       <button data-action="retry"
-        data-umami-event="retry-button"
+        data-umami-event="retry"
         data-umami-event-type="error-hint"
         class="w-full py-2.5 rounded-lg border-2 font-bold text-sm transition-all hover:bg-white active:scale-95"
         style="border-color: #00b9f0; color: #00b9f0;">
