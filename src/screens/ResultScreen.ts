@@ -347,7 +347,7 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
   ].join('\n')
 
   const text = lang === 'ja' ? jaText : enText
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
+  const buildShareUrl = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
   const ladderLabel = lang === 'ja' ? 'あなたの「Ruby力」をSNSで共有しよう！' : 'Share your Ruby skills on social media!'
 
   return `
@@ -356,9 +356,9 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
       <span>${ladderLabel}</span>
       <span class="text-xl pl-3">/</span>
     </div>
-    <a href="${escapeHtml(tweetUrl)}" target="_blank" rel="noopener noreferrer"
+    <a href="${escapeHtml(buildShareUrl)}" target="_blank" rel="noopener noreferrer"
       data-umami-event="outbound-tweet-url-click"
-      data-umami-event-url="${escapeHtml(tweetUrl)}"
+      data-umami-event-url="${escapeHtml(buildShareUrl)}"
       class="flex flex-col items-center justify-center w-full py-3 rounded-lg text-white font-bold transition-all hover:opacity-90 active:scale-95"
       style="background: #000;">
       <span class="text-sm">${t(lang, 'btnShare')}</span>
