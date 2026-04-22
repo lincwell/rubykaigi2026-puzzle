@@ -356,9 +356,6 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
       <span>${ladderLabel}</span>
       <span class="text-xl pl-3">/</span>
     </div>
-    <a href="https://x.com/share?url=https://example.com&text=おすすめのページ" target="_blank" rel="noopener noreferrer">
-      Xでシェア
-    </a>
     <a href="${escapeHtml(buildShareUrl)}" target="_blank" rel="noopener noreferrer"
       data-umami-event="outbound-tweet-url-click"
       data-umami-event-url="${escapeHtml(buildShareUrl)}"
