@@ -347,7 +347,7 @@ function buildShareButton(result: QuizResult, lang: Lang): string {
   ].join('\n')
 
   const text = lang === 'ja' ? jaText : enText
-  const buildShareUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
+  const buildShareUrl = `https://x.com/share?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`
   const ladderLabel = lang === 'ja' ? 'あなたの「Ruby力」をSNSで共有しよう！' : 'Share your Ruby skills on social media!'
 
   return `
