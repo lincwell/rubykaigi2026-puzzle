@@ -25,6 +25,10 @@ jobs:
           node-version: '24'
           cache: npm
 
+      - uses: flatt-security/setup-takumi-guard-npm@v1
+        with:
+          bot-id: BT01M0VK71KD7FBPAK0W2E2N6K36
+
       - run: npm ci
 
       - name: Build
