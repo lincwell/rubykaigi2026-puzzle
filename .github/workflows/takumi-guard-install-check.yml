@@ -22,6 +22,6 @@ jobs:
 
       - uses: flatt-security/setup-takumi-guard-npm@6d4182745c1e474c35a023573c2612c085be45a4 # v1.2.0
         with:
-          bot-id: BT01M0VK71KD7FBPAK0W2E2N6K36
+          bot-id: BT01M1X4E4R7QZY0RMYG8HSXQQXA
 
       - run: npm ci
